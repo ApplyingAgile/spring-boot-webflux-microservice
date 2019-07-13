@@ -1,0 +1,120 @@
+buildscript {
+    ext {
+        springBootVersion = '2.0.0.RC1'
+        dockerComposePluginVersion = '0.6.15'
+    }
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven { url "https://repo.spring.io/snapshot" }
+        maven { url "https://repo.spring.io/milestone" }
+        maven { url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath("io.spring.gradle:dependency-management-plugin:1.0.2.RELEASE")
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath("gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.17.2")
+        classpath "com.avast.gradle:gradle-docker-compose-plugin:${dockerComposePluginVersion}"
+        classpath('com.adarshr:gradle-test-logger-plugin:1.1.2')
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+apply plugin: 'com.palantir.docker'
+apply plugin: 'com.palantir.docker-run'
+apply plugin: 'docker-compose'
+apply plugin: 'com.adarshr.test-logger'
+
+apply from: "$rootDir/integTest.gradle"
+
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-consul-dependencies:2.0.0.M5"
+    }
+}
+
+group = 'com.aal.be'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = 1.8
+
+dockerCompose.isRequiredBy(integTest)
+
+testlogger {
+    theme 'mocha'
+}
+
+configurations {
+    compile.exclude module: 'spring-boot-starter-tomcat'
+
+    cucumberRuntime {
+        extendsFrom testRuntime
+    }
+}
+
+jar {
+    baseName = 'examplems'
+    version =  project.version
+}
+
+springBoot {
+    mainClassName = "com.aal.be.examplems.ExamplemsApplication"
+}
+
+bootJar {
+    baseName = 'examplems'
+    version =  project.version
+}
+
+
+docker {
+    name "${project.group}/${jar.baseName}"
+    tags 'latest'
+    files bootJar
+    dockerfile file('Dockerfile')
+    buildArgs([BUILD_VERSION: "${project.version}"])
+    noCache true
+}
+
+
+//task cucumber() {
+//    dependsOn assemble, compileTestJava
+//    doLast {
+//        javaexec {
+//            main = "cucumber.api.cli.Main"
+//            classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
+//            args = ['--plugin', 'pretty', '--glue', 'com.aal.be.bdd', 'src/bdd/resources']
+//        }
+//    }
+//}
+
+repositories {
+    mavenCentral()
+    maven { url "https://repo.spring.io/snapshot" }
+    maven { url "https://repo.spring.io/milestone" }
+}
+
+
+dependencies {
+    compile('org.springframework.boot:spring-boot-starter-webflux')
+    compile('org.springframework.boot:spring-boot-starter-data-mongodb-reactive')
+    compile('org.springframework.boot:spring-boot-starter-hateoas')
+    compile('org.springframework.boot:spring-boot-starter-reactor-netty')
+    compile('org.springframework.cloud:spring-cloud-starter-consul-all')
+
+    compileOnly('org.projectlombok:lombok')
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+    testCompile('de.flapdoodle.embed:de.flapdoodle.embed.mongo')
+    testCompile('io.projectreactor:reactor-test')
+    testCompile('org.springframework.restdocs:spring-restdocs-mockmvc')
+    testCompile('junit:junit')
+    testCompile('org.assertj:assertj-core')
+    testCompile('io.cucumber:cucumber-java:2.3.1')
+    testCompile('io.cucumber:cucumber-junit:2.3.1')
+    testCompile(group: 'info.cukes', name: 'cucumber-spring', version: '1.2.5')
+}

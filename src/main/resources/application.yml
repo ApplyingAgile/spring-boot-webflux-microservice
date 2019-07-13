@@ -1,0 +1,14 @@
+server:
+  port: 8080
+
+spring:
+  data:
+    mongodb:
+      uri:  mongodb://localhost:27017/webflux_demo
+
+
+  output:
+    ansi:
+      enabled: always
+  main:
+    banner-mode: console

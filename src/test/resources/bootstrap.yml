@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: ExampleMicroserviceApp
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      config:
+        format: yaml
+        enabled: false
+        prefix: config
+        data-key: data
+        profile-separator: '::'
+        default-context: application
+        fail-fast: false
+
+      discovery:
+        health-check-path: /health
+        health-check-interval: 15s
+        instance-id: ${spring.application.name}:${vcap.application.instance_id:${spring.application.instance_id:${random.value}}}
+        enabled: false
+
